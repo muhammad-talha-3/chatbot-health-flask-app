@@ -1,0 +1,6 @@
+Flask>=2.2.2
+Pandas>=0.19
+gunicorn==19.9.0
+numpy>=1.9.2
+pystan
+Cython>=0.22
