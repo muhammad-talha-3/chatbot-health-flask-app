@@ -59,7 +59,63 @@ def prompt1(s1, s2, data = "adsl"):
     return len((df.loc[(df[col1] < res[0]) & (df[col2] == s2.split(" ")[-1])]))
   elif "equal" in s1:
     return len((df.loc[(df[col1] == res[0]) & (df[col2] == s2.split(" ")[-1])]))
+
+def prompt1_1(s1, data = "adsl"):
+  col1 = ""
+
+  # String 1
+  for w in s1.split(" "):
+    if w.lower() in columns:
+      col1 = w.lower()
+      break
   
+  # Find a number in string
+  temp = re.findall(r'\d+', s1)
+  res = list(map(int, temp))
+
+  print(col1)
+  if ("greater" in s1) and ("equal" in s1) :
+    return len(df.loc[df[col1] >= res[0]])
+  elif ("lesser" in s1) and ("equal" in s1):
+    return len(df.loc[df[col1] <= res[0]])
+  elif ("less" in s1) and ("equal" in s1):
+    return len(df.loc[df[col1] <= res[0]])
+  elif "greater" in s1:
+    return len(df.loc[df[col1] > res[0]])
+  elif "lesser" in s1:
+    return len(df.loc[df[col1] < res[0]])
+  elif "less" in s1:
+    return len(df.loc[df[col1] < res[0]])
+  elif "equal" in s1:
+    return len(df.loc[df[col1] == res[0]])
+
+def prompt1_2(s2, data="adsl"):
+  col1, col2 = "", ""
+
+  # String 2
+  for w in s2.split(" "):
+    if w.lower() == "treatment":
+      if data == "adsl":
+        col1 = "trt01a"
+      elif data == "adlbc":
+        col1 = "trta"
+      break
+    elif w.lower() in columns:
+      col1 = w.lower()
+      break
+
+  if any(word in s2.lower() for word in ["High", "high"]):
+    col2 = "Xanomeline High Dose"
+  if any(word in s2.lower() for word in ["Low", "low"]):
+    col2 = "Xanomeline Low Dose"
+
+  print(col2)
+  if col2:
+    return len(df.loc[df[col1] == col2])
+  else:
+    return len(df.loc[df[col1] == s2.split(" ")[-1]])
+
+
 def prompt2(s, data = "adsl"):
   cols = []
 
@@ -119,27 +175,41 @@ def home():
     return render_template("index.html")
 @app.route("/get")
 def get_bot_response():
+    try:
+      user_input = request.args.get('msg')
+      sen1, sen2 = preprocess_input(user_input)
+      print(sen1, sen2)
 
-    user_input = request.args.get('msg')
-    sen1, sen2 = preprocess_input(user_input)
-    print(sen1, sen2)
-
-    if any(word in sen1.lower() for word in ["hello", "hi", "hey"]):
-      return "Hi, I'm good. How can I help you ?"
-    elif "addverse" in sen1.lower():
-      pass
-    elif "lab" in sen1.lower():
-      pass
-    else:
-        if any(word in sen1 for word in ["greater", "lesser", "equal"]):
-            res = prompt1(sen1, sen2, "adsl")
-            print("Chatbot: ", res)
-            return str(res)
+      if any(word in sen1.lower() for word in ["hello", "hey"]):
+        return "Hi, I'm good. How can I help you ?"
+      elif "addverse" in sen1.lower():
+        pass
+      elif "lab" in sen1.lower():
+        pass
+      else:
+        if sen1 and sen2:
+          if any(word in sen1 for word in ["greater", "lesser", "less", "equal"]):
+              res = prompt1(sen1, sen2, "adsl")
+              # print("Chatbot: ", res)
+              return str(res)
         elif any(word in user_input for word in ["mean", "median", "mode"]):
             res = prompt2(user_input, "adsl")
-            print("Chatbot", res)
+            # print("Chatbot", res)
             return str(res)
+        elif sen1:
+          if any(word in sen1 for word in ["greater", "lesser", "less", "equal"]):
+              res = prompt1_1(sen1, "adsl")
+              # print("Chatbot: ", res)
+              return str(res)
+          else:
+              print("TRUE")
+              res = prompt1_2(sen1, "adsl")
+              # print("Chatbot: ", res)
+              return str(res)
+      return "I didn't understood your question, please ask me that in which I'm expert to answer ?"
+    except Exception as e:
+      print("Error: ", e)
+      return "I didn't understood your question, please ask me that in which I'm expert to answer ?"
 
-    return "I didn't understood your question, please ask me that in which I'm expert to answer ?"
 if __name__ == "__main__":
     app.run(debug=True)
